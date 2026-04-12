@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 env:
   CR_REGISTRY: cr.yandex/crp4odt1er9cmqarghdb
