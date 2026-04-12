@@ -36,8 +36,8 @@ jobs:
         uses: yc-actions/yc-sls-container-deploy@v2
         with:
           yc-sa-json-credentials: ${{ secrets.YC_SA_JSON_CREDENTIALS }}
-          container-name: ${{ vars.YC_CONTAINER_NAME }}
-          folder-id: ${{ vars.YC_FOLDER_ID }}
+          container-name: linni-back
+          folder-id: b1gslim9pjl5jan2tbod
           revision-image-url: ${{ env.CR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           revision-service-account-id: ${{ vars.YC_SERVICE_ACCOUNT_ID }}
           revision-env: |
