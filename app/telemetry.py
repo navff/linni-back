@@ -18,7 +18,7 @@ def setup_telemetry(api_key: str, folder_id: str) -> None:
     exporter = OTLPSpanExporter(
         endpoint="ingest.monium.yandex.cloud:443",
         headers={
-            "Authorization": f"Api-Key {api_key}",
+            "authorization": f"Api-Key {api_key}",
             "x-monium-project": f"folder__{folder_id}",
         },
     )

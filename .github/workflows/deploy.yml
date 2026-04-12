@@ -40,7 +40,7 @@ jobs:
           folder-id: b1gslim9pjl5jan2tbod
           revision-image-url: ${{ env.CR_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           revision-service-account-id: ajevd85hi4q5rgcernn2
-          revision-memory: 512Mb
+          revision-memory: 1024Mb
           revision-core-fraction: 5
           revision-provisioned-instances: 1
           revision-env: |
