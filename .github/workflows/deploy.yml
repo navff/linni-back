@@ -51,4 +51,4 @@ jobs:
             S3_ACCESS_KEY=YCAJE39xxesNiBORynLJuwl9V
             S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}
             S3_BUCKET=linni
-            DEBUG=false
+            DEBUG=true
