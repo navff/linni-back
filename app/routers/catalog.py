@@ -1,9 +1,13 @@
+import json
+import logging
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/catalog", tags=["catalog"])
 
-CARS_JSON_URL = "https://raw.githubusercontent.com/blanzh/carsBase/master/cars.json"
+_CATALOG_PATH = Path(__file__).parent.parent / "data" / "cars.json"
 
 # Кэш: список марок, загружается один раз при старте приложения.
 # Каждый элемент: {"id": str, "name": str, "cyrillic_name": str, "models": [...]}
@@ -11,14 +15,12 @@ _catalog: list[dict] = []
 
 
 async def load_catalog() -> None:
-    """Загружает справочник с GitHub. Вызывается из lifespan."""
-    import httpx
-
+    """Загружает справочник из локального файла. Вызывается из lifespan."""
     global _catalog
-    async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.get(CARS_JSON_URL)
-        response.raise_for_status()
-        _catalog = response.json()
+    try:
+        _catalog = json.loads(_CATALOG_PATH.read_text(encoding="utf-8"))
+    except Exception as e:
+        logging.warning(f"Не удалось загрузить каталог автомобилей: {e}")
 
 
 # ---------- Схемы ответов ----------
