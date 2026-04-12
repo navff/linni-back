@@ -5,21 +5,21 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 
-def setup_telemetry(api_key: str, folder_id: str) -> None:
-    if not api_key or not folder_id:
+def setup_telemetry(api_key: str, monium_project: str) -> None:
+    if not api_key or not monium_project:
         return
 
     resource = Resource.create({
         "service.name": "linni-back",
         "cluster": "prod",
-        "project": f"folder__{folder_id}",
+        "project": monium_project,
     })
 
     exporter = OTLPSpanExporter(
         endpoint="ingest.monium.yandex.cloud:443",
         headers={
             "authorization": f"Api-Key {api_key}",
-            "x-monium-project": f"folder__{folder_id}",
+            "x-monium-project": monium_project,
         },
     )
 

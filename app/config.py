@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: list[str] = ["*"]
     DEBUG: bool = False
     MONIUM_API_KEY: str = ""
-    MONIUM_FOLDER_ID: str = ""
+    MONIUM_PROJECT: str = ""
 
     class Config:
         env_file = ".env"

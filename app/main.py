@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-setup_telemetry(settings.MONIUM_API_KEY, settings.MONIUM_FOLDER_ID)
+setup_telemetry(settings.MONIUM_API_KEY, settings.MONIUM_PROJECT)
 
 app = FastAPI(title="Линни API", version="1.0.0", lifespan=lifespan)
 
