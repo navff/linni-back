@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
+from .database import warmup_db
 from .routers import cars, records, share
 from .routers import catalog
 from .routers.catalog import load_catalog
@@ -12,6 +13,7 @@ from .routers.catalog import load_catalog
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await load_catalog()
+    await warmup_db()
     yield
 
 
