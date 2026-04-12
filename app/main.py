@@ -2,12 +2,15 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
 from .config import settings
-from .database import warmup_db
+from .database import engine, warmup_db
 from .routers import cars, records, share
 from .routers import catalog
 from .routers.catalog import load_catalog
+from .telemetry import setup_telemetry
 
 
 @asynccontextmanager
@@ -17,7 +20,12 @@ async def lifespan(app: FastAPI):
     yield
 
 
+setup_telemetry(settings.MONIUM_API_KEY, settings.MONIUM_FOLDER_ID)
+
 app = FastAPI(title="Линни API", version="1.0.0", lifespan=lifespan)
+
+FastAPIInstrumentor.instrument_app(app)
+SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine)
 
 app.add_middleware(
     CORSMiddleware,

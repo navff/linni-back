@@ -52,3 +52,5 @@ jobs:
             S3_SECRET_KEY=${{ secrets.S3_SECRET_KEY }}
             S3_BUCKET=linni
             DEBUG=true
+            MONIUM_API_KEY=${{ secrets.MONIUM_API_KEY }}
+            MONIUM_FOLDER_ID=b1gslim9pjl5jan2tbod

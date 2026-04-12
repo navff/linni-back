@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     S3_BUCKET: str = "linni"
     CORS_ORIGINS: list[str] = ["*"]
     DEBUG: bool = False
+    MONIUM_API_KEY: str = ""
+    MONIUM_FOLDER_ID: str = ""
 
     class Config:
         env_file = ".env"

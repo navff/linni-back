@@ -10,3 +10,8 @@ aioboto3==13.2.0
 aiogram==3.27.0
 python-multipart==0.0.19
 greenlet
+opentelemetry-api==1.33.0
+opentelemetry-sdk==1.33.0
+opentelemetry-exporter-otlp-proto-grpc==1.33.0
+opentelemetry-instrumentation-fastapi==0.54b0
+opentelemetry-instrumentation-sqlalchemy==0.54b0
