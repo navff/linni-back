@@ -40,6 +40,17 @@ class CarUpdate(CarCreate):
     pass
 
 
+class CarMileageUpdate(BaseModel):
+    mileage: int
+
+    @field_validator("mileage")
+    @classmethod
+    def mileage_positive(cls, v: int) -> int:
+        if v <= 0:
+            raise ValueError("Пробег должен быть больше 0")
+        return v
+
+
 class CarResponse(BaseModel):
     id: uuid.UUID
     userId: int

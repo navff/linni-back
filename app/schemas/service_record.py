@@ -1,19 +1,10 @@
 import uuid
 from datetime import date, datetime
-from enum import Enum
-from typing import Literal
 
 from pydantic import BaseModel, field_validator
 
 
-class Category(str, Enum):
-    maintenance = "maintenance"
-    repair = "repair"
-    consumable = "consumable"
-
-
 class ServiceRecordCreate(BaseModel):
-    category: Category
     title: str
     date: date
     mileage: int
@@ -43,7 +34,6 @@ class ServiceRecordUpdate(ServiceRecordCreate):
 class ServiceRecordResponse(BaseModel):
     id: uuid.UUID
     carId: uuid.UUID
-    category: str
     title: str
     date: date
     mileage: int
@@ -60,7 +50,6 @@ class ServiceRecordResponse(BaseModel):
         return cls(
             id=record.id,
             carId=record.car_id,
-            category=record.category,
             title=record.title,
             date=record.date,
             mileage=record.mileage,

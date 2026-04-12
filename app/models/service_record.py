@@ -13,7 +13,6 @@ class ServiceRecord(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     car_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("cars.id", ondelete="CASCADE"), nullable=False)
-    category: Mapped[str] = mapped_column(Text, nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
     date: Mapped[date] = mapped_column(Date, nullable=False)
     mileage: Mapped[int] = mapped_column(Integer, nullable=False)

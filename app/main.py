@@ -7,7 +7,7 @@ from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
 from .config import settings
 from .database import engine, warmup_db
-from .routers import cars, records, share
+from .routers import cars, records, share, maintenance
 from .routers import catalog
 from .routers.catalog import load_catalog
 from .telemetry import setup_telemetry
@@ -37,6 +37,7 @@ app.add_middleware(
 
 app.include_router(cars.router)
 app.include_router(records.router)
+app.include_router(maintenance.router)
 app.include_router(share.router)
 app.include_router(catalog.router)
 

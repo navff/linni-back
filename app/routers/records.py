@@ -1,7 +1,7 @@
 import asyncio
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -25,7 +25,6 @@ async def _get_car_for_user(db: AsyncSession, car_id: uuid.UUID, user_id: int) -
 @router.get("", response_model=list[ServiceRecordResponse])
 async def list_records(
     car_id: uuid.UUID,
-    category: str | None = Query(None),
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -38,9 +37,6 @@ async def list_records(
         .options(selectinload(ServiceRecord.attachments))
         .order_by(ServiceRecord.date.desc(), ServiceRecord.created_at.desc())
     )
-    if category:
-        query = query.where(ServiceRecord.category == category)
-
     result = await db.execute(query)
     records = result.scalars().all()
     return [ServiceRecordResponse.from_orm_model(r) for r in records]

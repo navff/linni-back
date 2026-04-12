@@ -11,7 +11,7 @@ from ..auth import get_current_user
 from ..bot import send_rating_request
 from ..database import get_db
 from ..models import Car, ServiceRecord, ShareToken, User
-from ..schemas.car import CarCreate, CarResponse, CarUpdate
+from ..schemas.car import CarCreate, CarResponse, CarUpdate, CarMileageUpdate
 from ..schemas.service_record import ShareTokenResponse
 from ..config import settings
 
@@ -104,6 +104,26 @@ async def delete_car(
         raise HTTPException(status_code=404, detail="Автомобиль не найден")
     await db.delete(car)
     await db.commit()
+
+
+@router.patch("/{car_id}/mileage", response_model=CarResponse)
+async def update_mileage(
+    car_id: uuid.UUID,
+    data: CarMileageUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    user_id = int(current_user["user"]["id"])
+    car = await db.get(Car, car_id)
+    if car is None or car.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Автомобиль не найден")
+    if data.mileage <= car.mileage:
+        raise HTTPException(status_code=422, detail=f"Новый пробег должен быть больше текущего ({car.mileage} км)")
+    car.mileage = data.mileage
+    car.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(car)
+    return CarResponse.from_orm_model(car)
 
 
 @router.post("/{car_id}/share", response_model=ShareTokenResponse)

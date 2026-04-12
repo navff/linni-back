@@ -30,3 +30,6 @@ class Car(Base):
     share_tokens: Mapped[list["ShareToken"]] = relationship(
         "ShareToken", back_populates="car", cascade="all, delete-orphan"
     )
+    maintenance_plans: Mapped[list["MaintenancePlan"]] = relationship(
+        "MaintenancePlan", back_populates="car", cascade="all, delete-orphan"
+    )
