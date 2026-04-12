@@ -19,8 +19,11 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from app.database import Base
 from app.models import User, Car, ServiceRecord, ShareToken
 from app.models.service_record import Attachment
+from app.config import settings
 
 target_metadata = Base.metadata
+
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 
 def run_migrations_offline() -> None:

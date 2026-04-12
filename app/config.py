@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     S3_ENDPOINT: str = "https://storage.yandexcloud.net"
     S3_ACCESS_KEY: str = ""
     S3_SECRET_KEY: str = ""
-    S3_BUCKET: str = "linny-files"
+    S3_BUCKET: str = "linni"
     CORS_ORIGINS: list[str] = ["*"]
     DEBUG: bool = False
 
