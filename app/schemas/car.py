@@ -2,15 +2,29 @@ import uuid
 from datetime import datetime
 
 from pydantic import BaseModel, field_validator
+from pydantic.alias_generators import to_camel
+
+
+ENGINE_TYPES = {'petrol', 'diesel', 'hybrid', 'electric'}
 
 
 class CarCreate(BaseModel):
+    model_config = {"alias_generator": to_camel, "populate_by_name": True}
+
     make: str
     model: str
     year: int
+    engine_type: str | None = None
     vin: str | None = None
     mileage: int
     nickname: str | None = None
+
+    @field_validator("engine_type")
+    @classmethod
+    def engine_type_valid(cls, v: str | None) -> str | None:
+        if v is not None and v not in ENGINE_TYPES:
+            raise ValueError(f"Тип двигателя должен быть одним из: {', '.join(ENGINE_TYPES)}")
+        return v
 
     @field_validator("mileage")
     @classmethod
@@ -57,6 +71,7 @@ class CarResponse(BaseModel):
     make: str
     model: str
     year: int
+    engineType: str | None
     vin: str | None
     mileage: int
     nickname: str | None
@@ -74,6 +89,7 @@ class CarResponse(BaseModel):
             make=car.make,
             model=car.model,
             year=car.year,
+            engineType=car.engine_type,
             vin=car.vin,
             mileage=car.mileage,
             nickname=car.nickname,

@@ -1,5 +1,4 @@
 import uuid
-from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
@@ -10,7 +9,6 @@ from ..database import get_db
 from ..models import Car, MaintenancePlan
 from ..schemas.maintenance_plan import (
     MaintenancePlanCreate,
-    MaintenancePlanDone,
     MaintenancePlanResponse,
     MaintenancePlanUpdate,
 )
@@ -56,10 +54,9 @@ async def create_plan(
     plan = MaintenancePlan(
         car_id=car_id,
         title=data.title,
-        interval_km=data.interval_km,
-        interval_months=data.interval_months,
-        last_mileage=data.last_mileage,
-        last_date=data.last_date,
+        target_km=data.target_km,
+        target_date=data.target_date,
+        summary=data.summary,
         notes=data.notes,
     )
     db.add(plan)
@@ -81,43 +78,13 @@ async def update_plan(
 
     plan = await db.get(MaintenancePlan, plan_id)
     if plan is None or plan.car_id != car_id:
-        raise HTTPException(status_code=404, detail="Регламент не найден")
+        raise HTTPException(status_code=404, detail="Пункт плана не найден")
 
     plan.title = data.title
-    plan.interval_km = data.interval_km
-    plan.interval_months = data.interval_months
-    plan.last_mileage = data.last_mileage
-    plan.last_date = data.last_date
+    plan.target_km = data.target_km
+    plan.target_date = data.target_date
+    plan.summary = data.summary
     plan.notes = data.notes
-
-    await db.commit()
-    await db.refresh(plan)
-    return MaintenancePlanResponse.from_orm_model(plan)
-
-
-@router.patch("/{plan_id}/done", response_model=MaintenancePlanResponse)
-async def mark_plan_done(
-    car_id: uuid.UUID,
-    plan_id: uuid.UUID,
-    data: MaintenancePlanDone,
-    current_user: dict = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
-):
-    user_id = int(current_user["user"]["id"])
-    car = await _get_car_for_user(db, car_id, user_id)
-
-    plan = await db.get(MaintenancePlan, plan_id)
-    if plan is None or plan.car_id != car_id:
-        raise HTTPException(status_code=404, detail="Регламент не найден")
-
-    if data.mileage is not None:
-        plan.last_mileage = data.mileage
-        if data.mileage > car.mileage:
-            car.mileage = data.mileage
-            car.updated_at = datetime.utcnow()
-
-    if data.done_date is not None:
-        plan.last_date = data.done_date
 
     await db.commit()
     await db.refresh(plan)
@@ -136,7 +103,7 @@ async def delete_plan(
 
     plan = await db.get(MaintenancePlan, plan_id)
     if plan is None or plan.car_id != car_id:
-        raise HTTPException(status_code=404, detail="Регламент не найден")
+        raise HTTPException(status_code=404, detail="Пункт плана не найден")
 
     await db.delete(plan)
     await db.commit()

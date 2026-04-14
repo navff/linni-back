@@ -14,10 +14,9 @@ class MaintenancePlan(Base):
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     car_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("cars.id", ondelete="CASCADE"), nullable=False)
     title: Mapped[str] = mapped_column(Text, nullable=False)
-    interval_km: Mapped[int | None] = mapped_column(Integer)
-    interval_months: Mapped[int | None] = mapped_column(Integer)
-    last_mileage: Mapped[int | None] = mapped_column(Integer)
-    last_date: Mapped[date | None] = mapped_column(Date)
+    target_km: Mapped[int | None] = mapped_column(Integer)
+    target_date: Mapped[date | None] = mapped_column(Date)
+    summary: Mapped[str | None] = mapped_column(Text)
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(default=datetime.utcnow)
 

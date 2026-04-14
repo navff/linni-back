@@ -16,6 +16,7 @@ class Car(Base):
     make: Mapped[str] = mapped_column(Text, nullable=False)
     model: Mapped[str] = mapped_column(Text, nullable=False)
     year: Mapped[int] = mapped_column(SmallInteger, nullable=False)
+    engine_type: Mapped[str | None] = mapped_column(Text)
     vin: Mapped[str | None] = mapped_column(Text)
     mileage: Mapped[int] = mapped_column(Integer, nullable=False)
     nickname: Mapped[str | None] = mapped_column(Text)

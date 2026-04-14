@@ -9,10 +9,9 @@ class MaintenancePlanCreate(BaseModel):
     model_config = {"alias_generator": to_camel, "populate_by_name": True}
 
     title: str
-    interval_km: int | None = None
-    interval_months: int | None = None
-    last_mileage: int | None = None
-    last_date: date | None = None
+    target_km: int | None = None
+    target_date: date | None = None
+    summary: str | None = None
     notes: str | None = None
 
     @field_validator("title")
@@ -23,9 +22,9 @@ class MaintenancePlanCreate(BaseModel):
         return v.strip()
 
     @model_validator(mode="after")
-    def at_least_one_interval(self) -> "MaintenancePlanCreate":
-        if not self.interval_km and not self.interval_months:
-            raise ValueError("Укажите хотя бы один интервал: по пробегу или по времени")
+    def at_least_one_target(self) -> "MaintenancePlanCreate":
+        if self.target_km is None and self.target_date is None:
+            raise ValueError("Укажите хотя бы пробег или дату выполнения")
         return self
 
 
@@ -33,27 +32,13 @@ class MaintenancePlanUpdate(MaintenancePlanCreate):
     pass
 
 
-class MaintenancePlanDone(BaseModel):
-    model_config = {"alias_generator": to_camel, "populate_by_name": True}
-
-    mileage: int | None = None
-    done_date: date | None = None
-
-    @model_validator(mode="after")
-    def at_least_one(self) -> "MaintenancePlanDone":
-        if self.mileage is None and self.done_date is None:
-            raise ValueError("Укажите пробег или дату выполнения")
-        return self
-
-
 class MaintenancePlanResponse(BaseModel):
     id: uuid.UUID
     carId: uuid.UUID
     title: str
-    intervalKm: int | None
-    intervalMonths: int | None
-    lastMileage: int | None
-    lastDate: date | None
+    targetKm: int | None
+    targetDate: date | None
+    summary: str | None
     notes: str | None
     createdAt: datetime
 
@@ -65,10 +50,9 @@ class MaintenancePlanResponse(BaseModel):
             id=plan.id,
             carId=plan.car_id,
             title=plan.title,
-            intervalKm=plan.interval_km,
-            intervalMonths=plan.interval_months,
-            lastMileage=plan.last_mileage,
-            lastDate=plan.last_date,
+            targetKm=plan.target_km,
+            targetDate=plan.target_date,
+            summary=plan.summary,
             notes=plan.notes,
             createdAt=plan.created_at,
         )
