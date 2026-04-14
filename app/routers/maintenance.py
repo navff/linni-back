@@ -1,6 +1,8 @@
 import uuid
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +16,11 @@ from ..schemas.maintenance_plan import (
 )
 
 router = APIRouter(prefix="/api/cars/{car_id}/maintenance", tags=["maintenance"])
+
+
+class ExecutePlanRequest(BaseModel):
+    mileage: int
+    date: date
 
 
 async def _get_car_for_user(db: AsyncSession, car_id: uuid.UUID, user_id: int) -> Car:
@@ -107,3 +114,56 @@ async def delete_plan(
 
     await db.delete(plan)
     await db.commit()
+
+
+@router.post("/{plan_id}/execute", response_model=list[MaintenancePlanResponse])
+async def execute_plan(
+    car_id: uuid.UUID,
+    plan_id: uuid.UUID,
+    data: ExecutePlanRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Mark a plan as executed with actual mileage and date.
+    Shifts all remaining plans by the delta between planned and actual values,
+    then deletes the executed plan.
+    """
+    user_id = int(current_user["user"]["id"])
+    await _get_car_for_user(db, car_id, user_id)
+
+    plan = await db.get(MaintenancePlan, plan_id)
+    if plan is None or plan.car_id != car_id:
+        raise HTTPException(status_code=404, detail="Пункт плана не найден")
+
+    # Calculate deltas between planned and actual
+    delta_km: int | None = None
+    if plan.target_km is not None:
+        delta_km = data.mileage - plan.target_km
+
+    delta_days: int | None = None
+    if plan.target_date is not None:
+        delta_days = (data.date - plan.target_date).days
+
+    # Fetch all other plans for this car
+    result = await db.execute(
+        select(MaintenancePlan)
+        .where(MaintenancePlan.car_id == car_id, MaintenancePlan.id != plan_id)
+        .order_by(MaintenancePlan.target_date, MaintenancePlan.target_km)
+    )
+    remaining = result.scalars().all()
+
+    # Shift each remaining plan by the deltas
+    for p in remaining:
+        if delta_km is not None and p.target_km is not None:
+            p.target_km += delta_km
+        if delta_days is not None and p.target_date is not None:
+            p.target_date = p.target_date + timedelta(days=delta_days)
+
+    await db.delete(plan)
+    await db.commit()
+
+    for p in remaining:
+        await db.refresh(p)
+
+    return [MaintenancePlanResponse.from_orm_model(p) for p in remaining]

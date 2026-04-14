@@ -9,6 +9,7 @@ python-dotenv==1.0.1
 aioboto3==13.2.0
 aiogram==3.27.0
 python-multipart==0.0.19
+httpx==0.28.1
 greenlet
 opentelemetry-api==1.33.0
 opentelemetry-sdk==1.33.0
