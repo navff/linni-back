@@ -52,25 +52,56 @@ async def create_record(
     user_id = int(current_user["user"]["id"])
     car = await _get_car_for_user(db, car_id, user_id)
 
-    # Validate mileage >= previous record
-    last_record = await db.execute(
-        select(ServiceRecord)
-        .where(ServiceRecord.car_id == car_id)
-        .order_by(ServiceRecord.date.desc(), ServiceRecord.created_at.desc())
-        .limit(1)
-    )
-    prev = last_record.scalar_one_or_none()
-    if prev and data.mileage < prev.mileage:
-        raise HTTPException(
-            status_code=422,
-            detail=f"Пробег не может быть меньше предыдущей записи ({prev.mileage} км)",
-        )
+    consumption_per_100km = None
 
-    record = ServiceRecord(car_id=car_id, **data.model_dump())
+    if data.mileage is not None:
+        # Validate mileage >= last record mileage (any type)
+        last_record = await db.execute(
+            select(ServiceRecord)
+            .where(ServiceRecord.car_id == car_id, ServiceRecord.mileage.isnot(None))
+            .order_by(ServiceRecord.date.desc(), ServiceRecord.created_at.desc())
+            .limit(1)
+        )
+        prev = last_record.scalar_one_or_none()
+        if prev and data.mileage < prev.mileage:
+            raise HTTPException(
+                status_code=422,
+                detail=f"Пробег не может быть меньше предыдущей записи ({prev.mileage} км)",
+            )
+
+        # Calculate fuel consumption if this is a fuel record with mileage
+        if data.record_type == "fuel":
+            prev_fuel = await db.execute(
+                select(ServiceRecord)
+                .where(
+                    ServiceRecord.car_id == car_id,
+                    ServiceRecord.record_type == "fuel",
+                    ServiceRecord.mileage.isnot(None),
+                )
+                .order_by(ServiceRecord.date.desc(), ServiceRecord.created_at.desc())
+                .limit(1)
+            )
+            last_fuel = prev_fuel.scalar_one_or_none()
+            if last_fuel and last_fuel.mileage and data.mileage > last_fuel.mileage:
+                distance = data.mileage - last_fuel.mileage
+                consumption_per_100km = round(data.fuel_liters * 100 / distance, 2)
+
+    record = ServiceRecord(
+        car_id=car_id,
+        record_type=data.record_type,
+        title=data.title,
+        date=data.date,
+        mileage=data.mileage,
+        cost=data.cost,
+        workshop=data.workshop,
+        notes=data.notes,
+        fuel_liters=data.fuel_liters,
+        consumption_per_100km=consumption_per_100km,
+    )
     db.add(record)
 
     # Update car mileage if new record has higher mileage
-    if data.mileage > car.mileage:
+    if data.mileage is not None and data.mileage > car.mileage:
         car.mileage = data.mileage
 
     await db.flush()
@@ -114,8 +145,18 @@ async def update_record(
     if record is None or record.car_id != car_id:
         raise HTTPException(status_code=404, detail="Запись не найдена")
 
-    for field, value in data.model_dump(exclude_none=False).items():
-        setattr(record, field, value)
+    record.record_type = data.record_type
+    record.title = data.title
+    record.date = data.date
+    record.mileage = data.mileage
+    record.cost = data.cost
+    record.workshop = data.workshop
+    record.notes = data.notes
+    record.fuel_liters = data.fuel_liters
+    # Recalculate consumption is not done on edit (complex; keep existing value unless cleared)
+    if data.record_type != "fuel":
+        record.fuel_liters = None
+        record.consumption_per_100km = None
 
     await db.commit()
     await db.refresh(record, ["attachments"])
