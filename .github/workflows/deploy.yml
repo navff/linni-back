@@ -55,3 +55,5 @@ jobs:
             DEBUG=true
             MONIUM_API_KEY=${{ secrets.MONIUM_API_KEY }}
             MONIUM_PROJECT=cloud__b1goihrd513av2bvpmcl
+            N8N_SUGGESTIONS_TOKEN=''
+            INTERNAL_API_TOKEN=''
