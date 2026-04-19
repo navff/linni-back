@@ -14,7 +14,9 @@ class Settings(BaseSettings):
     MONIUM_API_KEY: str = ""
     MONIUM_PROJECT: str = ""
     N8N_SUGGESTIONS_URL: str = "https://n8n.navff.ru/webhook/linni/service-suggestions"
+    N8N_DESCRIPTION_URL: str = "https://n8n.navff.ru/webhook/suggest-description"
     N8N_SUGGESTIONS_TOKEN: str = ""
+    INTERNAL_API_TOKEN: str = ""
 
     class Config:
         env_file = ".env"

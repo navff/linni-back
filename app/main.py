@@ -7,7 +7,7 @@ from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 
 from .config import settings
 from .database import engine, warmup_db
-from .routers import cars, records, share, maintenance, suggestions
+from .routers import cars, records, share, maintenance, suggestions, internal
 from .routers import catalog
 from .routers.catalog import load_catalog
 from .telemetry import setup_telemetry
@@ -41,6 +41,7 @@ app.include_router(maintenance.router)
 app.include_router(share.router)
 app.include_router(catalog.router)
 app.include_router(suggestions.router)
+app.include_router(internal.router)
 
 
 @app.get("/health")

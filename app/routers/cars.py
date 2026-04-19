@@ -1,21 +1,63 @@
-import asyncio
+import logging
 import uuid
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException
+import httpx
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
+
+logger = logging.getLogger(__name__)
 
 from ..auth import get_current_user
 from ..bot import send_rating_request
-from ..database import get_db
+from ..database import get_db, async_session_maker
 from ..models import Car, ServiceRecord, ShareToken, User
-from ..schemas.car import CarCreate, CarResponse, CarUpdate, CarMileageUpdate
+from ..schemas.car import CarCreate, CarResponse, CarUpdate, CarMileageUpdate, CarDescriptionUpdate
 from ..schemas.service_record import ShareTokenResponse
 from ..config import settings
 
 router = APIRouter(prefix="/api/cars", tags=["cars"])
+
+ENGINE_TYPE_LABELS: dict[str, str] = {
+    "petrol": "бензин",
+    "diesel": "дизель",
+    "hybrid": "гибрид",
+    "electric": "электро",
+}
+
+_DESCRIPTION_TIMEOUT = 60
+
+
+async def _fetch_and_save_description(car_id: uuid.UUID, car_model: str, year: int) -> None:
+    try:
+        async with httpx.AsyncClient(timeout=_DESCRIPTION_TIMEOUT) as client:
+            response = await client.post(
+                settings.N8N_DESCRIPTION_URL,
+                json={"car_model": car_model, "year": str(year)},
+                headers={
+                    "Authorization": f"Bearer {settings.N8N_SUGGESTIONS_TOKEN}",
+                    "Content-Type": "application/json",
+                },
+            )
+        response.raise_for_status()
+        raw = response.json()
+        text = raw[0]["text"] if (isinstance(raw, list) and raw and isinstance(raw[0].get("text"), str)) else None
+        if not text:
+            return
+    except Exception as exc:
+        logger.warning("Description fetch failed for car %s: %s", car_id, exc)
+        return
+
+    try:
+        async with async_session_maker() as db:
+            car = await db.get(Car, car_id)
+            if car is not None:
+                car.description = text
+                car.updated_at = datetime.utcnow()
+                await db.commit()
+    except Exception as exc:
+        logger.warning("Description save failed for car %s: %s", car_id, exc)
 
 
 async def get_or_create_user(db: AsyncSession, user_data: dict) -> User:
@@ -48,6 +90,7 @@ async def list_cars(
 @router.post("", response_model=CarResponse, status_code=201)
 async def create_car(
     data: CarCreate,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
@@ -57,6 +100,11 @@ async def create_car(
     db.add(car)
     await db.commit()
     await db.refresh(car)
+
+    engine_label = ENGINE_TYPE_LABELS.get(car.engine_type or "", "")
+    car_model = f"{car.make} {car.model} ({engine_label})" if engine_label else f"{car.make} {car.model}"
+    background_tasks.add_task(_fetch_and_save_description, car.id, car_model, car.year)
+
     return CarResponse.from_orm_model(car)
 
 
@@ -120,6 +168,41 @@ async def update_mileage(
     if data.mileage <= car.mileage:
         raise HTTPException(status_code=422, detail=f"Новый пробег должен быть больше текущего ({car.mileage} км)")
     car.mileage = data.mileage
+    car.updated_at = datetime.utcnow()
+    await db.commit()
+    await db.refresh(car)
+    return CarResponse.from_orm_model(car)
+
+
+@router.post("/{car_id}/generate-description", status_code=202)
+async def generate_description(
+    car_id: uuid.UUID,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    user_id = int(current_user["user"]["id"])
+    car = await db.get(Car, car_id)
+    if car is None or car.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Автомобиль не найден")
+    engine_label = ENGINE_TYPE_LABELS.get(car.engine_type or "", "")
+    car_model = f"{car.make} {car.model} ({engine_label})" if engine_label else f"{car.make} {car.model}"
+    background_tasks.add_task(_fetch_and_save_description, car.id, car_model, car.year)
+    return {"status": "generating"}
+
+
+@router.patch("/{car_id}/description", response_model=CarResponse)
+async def update_description(
+    car_id: uuid.UUID,
+    data: CarDescriptionUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    user_id = int(current_user["user"]["id"])
+    car = await db.get(Car, car_id)
+    if car is None or car.user_id != user_id:
+        raise HTTPException(status_code=404, detail="Автомобиль не найден")
+    car.description = data.description
     car.updated_at = datetime.utcnow()
     await db.commit()
     await db.refresh(car)

@@ -54,6 +54,10 @@ class CarUpdate(CarCreate):
     pass
 
 
+class CarDescriptionUpdate(BaseModel):
+    description: str | None = None
+
+
 class CarMileageUpdate(BaseModel):
     mileage: int
 
@@ -76,6 +80,7 @@ class CarResponse(BaseModel):
     mileage: int
     nickname: str | None
     photoUrl: str | None
+    description: str | None
     createdAt: datetime
     updatedAt: datetime
 
@@ -94,6 +99,7 @@ class CarResponse(BaseModel):
             mileage=car.mileage,
             nickname=car.nickname,
             photoUrl=car.photo_url,
+            description=car.description,
             createdAt=car.created_at,
             updatedAt=car.updated_at,
         )
